@@ -1,36 +1,33 @@
-import streamlit as st # pyright: ignore[reportMissingImports]
-from utils import *
+import streamlit as st
+from utils import (
+    extract_text_from_pdf,
+    analyze_resume_job
+)
 
-st.set_page_config(page_title="Resume Matcher", layout="centered")
+st.set_page_config(page_title="AI Resume System", layout="centered")
 
-st.title(" AI Resume Job Matcher")
+st.title("📄 Lightweight AI Resume Matcher")
 
-resume_file = st.file_uploader("Upload Resume (PDF)", type=["pdf"])
-job_desc = st.text_area("Paste Job Description")
+st.write("Upload your resume and paste job description to get ATS score.")
 
-if resume_file and job_desc:
-    with st.spinner("Analyzing resume..."):
+job_text = st.text_area("📌 Job Description")
 
-        # Extract text
-        resume_text = extract_text_from_pdf(resume_file)
+resume_file = st.file_uploader("📤 Upload Resume (PDF)", type=["pdf"])
 
-        # Skills
-        resume_skills = extract_skills(resume_text)
-        job_skills = extract_skills(job_desc)
+if job_text and resume_file:
 
-        # Match score
-        score = calculate_match(resume_text, job_desc)
+    resume_text = extract_text_from_pdf(resume_file)
 
-        # Missing skills
-        missing = missing_skills(resume_skills, job_skills)
+    result = analyze_resume_job(resume_text, job_text)
 
-    st.success(f" Match Score: {score}%")
+    st.subheader("📊 ATS Match Score")
+    st.success(f"{result['match_score']} / 100")
 
-    st.subheader(" Resume Skills")
-    st.write(resume_skills)
+    st.subheader("🧠 Resume Skills")
+    st.write(result["resume_skills"])
 
-    st.subheader(" Job Skills")
-    st.write(job_skills)
+    st.subheader("📌 Job Skills")
+    st.write(result["job_skills"])
 
-    st.subheader(" Missing Skills")
-    st.write(missing)
+    st.subheader("⚠️ Missing Skills")
+    st.write(result["missing_skills"])
