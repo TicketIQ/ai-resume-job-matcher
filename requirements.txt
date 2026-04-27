@@ -2,3 +2,5 @@ streamlit
 pdfplumber
 sentence-transformers
 torch
+scikit-learn
+NumPy

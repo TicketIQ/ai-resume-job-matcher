@@ -2,7 +2,7 @@ import streamlit as st
 from job_analyzer import generate_resume_improvements
 from pdfminer.high_level import extract_text
 
-st.title("📄 AI Resume Improvement Generator")
+st.title("📄 AI Resume Optimizer (Hugging Face Powered)")
 
 job_desc = st.text_area("Paste Job Description")
 
@@ -14,13 +14,13 @@ if job_desc and resume_file:
 
     job_keywords, missing, bullets = generate_resume_improvements(job_desc, resume_text)
 
-    st.subheader("🔥 Important Job Keywords")
+    st.subheader("🔥 Job Keywords")
     st.write(job_keywords)
 
-    st.subheader("⚠️ Missing Skills in Resume")
+    st.subheader("⚠️ Missing Skills")
     st.write(missing)
 
-    st.subheader("🚀 Suggested Resume Bullet Points")
+    st.subheader("🚀 AI Generated Resume Points")
 
     for b in bullets:
-        st.write("•", b)
+        st.write(b)
