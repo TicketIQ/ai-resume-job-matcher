@@ -1,32 +1,40 @@
 from sklearn.feature_extraction.text import TfidfVectorizer
 import numpy as np
 import re
+from transformers import pipeline
 
-def extract_keywords(job_text, top_n=15):
+#  Load Hugging Face text generator
+generator = pipeline("text-generation", model="gpt2")
 
-    job_text = re.sub(r'[^a-zA-Z\s]', '', job_text.lower())
+def extract_keywords(text, top_n=15):
+
+    text = re.sub(r'[^a-zA-Z\s]', '', text.lower())
 
     vectorizer = TfidfVectorizer(stop_words='english')
-    X = vectorizer.fit_transform([job_text])
+    X = vectorizer.fit_transform([text])
 
-    feature_array = np.array(vectorizer.get_feature_names_out())
-    tfidf_sorting = np.argsort(X.toarray()).flatten()[::-1]
+    features = np.array(vectorizer.get_feature_names_out())
+    sorted_idx = np.argsort(X.toarray()).flatten()[::-1]
 
-    keywords = feature_array[tfidf_sorting][:top_n]
-
-    return list(set(keywords))
+    return list(set(features[sorted_idx][:top_n]))
 
 
-#  THIS is the function you must import
-def analyze_job_description(job_text):
+def generate_resume_improvements(job_text, resume_text):
 
-    keywords = extract_keywords(job_text)
+    job_keywords = extract_keywords(job_text)
 
-    skill_keywords = ["python","java","sql","aws","docker","kubernetes","ml","ai","nlp"]
+    resume_text = resume_text.lower()
 
-    skills = [k for k in keywords if k in skill_keywords]
-    others = [k for k in keywords if k not in skill_keywords]
+    missing = [w for w in job_keywords if w not in resume_text]
 
-    suggestions = [f"Add experience/projects involving {k}" for k in keywords]
+    bullet_points = []
 
-    return skills, others, suggestions
+    for skill in missing:
+
+        prompt = f"Write a professional resume bullet point for experience in {skill}:"
+
+        result = generator(prompt, max_length=60, num_return_sequences=1,pad_token_id=50256)
+
+        bullet_points.append(result[0]["generated_text"])
+
+    return job_keywords, missing, bullet_points
