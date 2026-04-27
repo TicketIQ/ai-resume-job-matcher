@@ -22,6 +22,7 @@ Providing a match score and missing skills
 
 
 
+
 🧠 Tech Stack
 Frontend/UI: Streamlit
 Backend: Python
