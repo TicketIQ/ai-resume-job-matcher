@@ -12,8 +12,6 @@ Automatically analyzing resumes
 Comparing them with job requirements
 Providing a match score and missing skills
 
-
-
 🎯 Features
 📄 Upload Resume (PDF)
 📝 Paste Job Description
@@ -34,34 +32,6 @@ PDF Parsing: pdfplumber
 
 
 🏗️ Architecture
-            +----------------------+
-            |   User Input         |
-            | (Resume + Job Desc)  |
-            +----------+-----------+
-                       |
-                       v
-        +-----------------------------+
-        |   Text Extraction (PDF)     |
-        +-----------------------------+
-                       |
-                       v
-        +-----------------------------+
-        |   Skill Extraction (NLP)    |
-        +-----------------------------+
-                       |
-                       v
-        +-----------------------------+
-        |  Embedding Generation       |
-        | (Sentence Transformers)     |
-        +-----------------------------+
-                       |
-                       v
-        +-----------------------------+
-        |   Cosine Similarity Score   |
-        +-----------------------------+
-                       |
-                       v
-        +-----------------------------+
-        |   Output Results            |
-        | Match Score + Skill Gaps    |
-        +-----------------------------+
+
+<img width="1718" height="210" alt="image" src="https://github.com/user-attachments/assets/7062f4b9-0ae0-4beb-a50f-06c71d319f61" />
+
