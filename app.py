@@ -3,7 +3,7 @@ from utils import *
 
 st.set_page_config(page_title="Resume Matcher", layout="centered")
 
-st.title("🚀 AI Resume Job Matcher")
+st.title(" AI Resume Job Matcher")
 
 resume_file = st.file_uploader("Upload Resume (PDF)", type=["pdf"])
 job_desc = st.text_area("Paste Job Description")
