@@ -12,15 +12,19 @@ if job_desc and resume_file:
 
     resume_text = extract_text(resume_file)
 
-    job_keywords, missing, bullets = generate_resume_improvements(job_desc, resume_text)
+    result = generate_resume_improvements(job_desc, resume_text)
+
+    st.subheader("📊 Match Score")
+    st.metric(label="ATS Match %", value=f"{result['match_score']}%")
 
     st.subheader("🔥 Job Keywords")
-    st.write(job_keywords)
+    st.write(result["job_keywords"])
 
     st.subheader("⚠️ Missing Skills")
-    st.write(missing)
+    st.write(result["missing_skills"])
 
     st.subheader("🚀 AI Generated Resume Points")
 
-    for b in bullets:
-        st.write(b)
+    for b in result["ai_suggestions"]:
+        if b:   # extra safety
+            st.write(b)
