@@ -3,7 +3,7 @@ from sentence_transformers import SentenceTransformer, util
 import streamlit as st
 
 # -----------------------------
-# Load Models (cached for speed)
+# LOAD MODELS (cached)
 # -----------------------------
 @st.cache_resource
 def load_llm():
@@ -11,21 +11,57 @@ def load_llm():
 
 @st.cache_resource
 def load_embedder():
-    return SentenceTransformer('all-MiniLM-L6-v2')
+    return SentenceTransformer("all-MiniLM-L6-v2")
 
 generator = load_llm()
 embedder = load_embedder()
 
 
 # -----------------------------
-# STEP 1: Extract skills using LLM
+# CLEANING RULES
+# -----------------------------
+BAD_WORDS = [
+    "ability", "experience", "knowledge", "understanding",
+    "demonstrable", "working", "familiarity", "skills",
+    "summary", "email", "phone", "github", "education"
+]
+
+
+def clean_skills(skills):
+    cleaned = []
+
+    for skill in skills:
+        skill = skill.strip().lower()
+
+        # remove long phrases
+        if len(skill.split()) > 3:
+            continue
+
+        # remove noisy words
+        if any(bad in skill for bad in BAD_WORDS):
+            continue
+
+        cleaned.append(skill)
+
+    return list(set(cleaned))
+
+
+# -----------------------------
+# STEP 1: SKILL EXTRACTION (LLM)
 # -----------------------------
 def extract_skills(text):
 
     prompt = f"""
-Extract all important technical and domain skills from the text below.
-Include both required and optional ("nice to have") skills.
-Return ONLY a comma-separated list.
+Extract ONLY technical and domain skills from the text.
+
+RULES:
+- Return ONLY comma-separated skills
+- Each skill must be 1–3 words max
+- DO NOT include sentences or explanations
+- DO NOT include personal info or summaries
+
+Example:
+python, sql, aws, graphql, genai, machine learning
 
 Text:
 {text}
@@ -34,16 +70,16 @@ Text:
     try:
         result = generator(prompt, max_new_tokens=120)[0]["generated_text"]
 
-        skills = [s.strip().lower() for s in result.split(",") if len(s.strip()) > 2]
+        skills = [s.strip().lower() for s in result.split(",") if s.strip()]
 
-        return list(set(skills))
+        return clean_skills(skills)
 
     except Exception:
         return []
 
 
 # -----------------------------
-# STEP 2: Semantic skill matching
+# STEP 2: SEMANTIC MATCHING
 # -----------------------------
 def find_missing_skills(job_skills, resume_text, threshold=0.5):
 
@@ -62,7 +98,7 @@ def find_missing_skills(job_skills, resume_text, threshold=0.5):
 
 
 # -----------------------------
-# STEP 3: Match Score (semantic)
+# STEP 3: MATCH SCORE
 # -----------------------------
 def calculate_match_score(job_skills, resume_text):
 
@@ -75,40 +111,62 @@ def calculate_match_score(job_skills, resume_text):
         sim = util.cos_sim(skill_embedding, resume_embedding).item()
         scores.append(sim)
 
-    if len(scores) == 0:
+    if not scores:
         return 0
 
     return round((sum(scores) / len(scores)) * 100, 2)
 
 
 # -----------------------------
-# STEP 4: AI Bullet Generator
+# STEP 4: BULLET GENERATION (FIXED)
 # -----------------------------
 def generate_bullet(skill, job_context, resume_context):
 
     prompt = f"""
-You are a professional resume writer.
+You are a senior resume optimization expert.
 
-Job context:
-{job_context}
+TASK:
+Generate ONE improvement suggestion based on JOB and RESUME.
 
-Candidate resume:
-{resume_context}
+STRICT RULES:
+- DO NOT copy resume text
+- DO NOT include name, email, education, or summary
+- DO NOT summarize resume
+- Focus ONLY on missing skill: {skill}
+- Max 20 words
+- Start with action verb
+- Make it ATS-friendly
 
-Write ONE strong resume bullet for skill: {skill}.
-Make it concise, impactful, and ATS-friendly.
+JOB:
+{job_context[:500]}
+
+RESUME:
+{resume_context[:500]}
+
+OUTPUT:
+• <improvement suggestion>
 """
 
     try:
         result = generator(prompt, max_new_tokens=60)[0]["generated_text"].strip()
 
-        if not result:
-            return f"• Demonstrated experience in {skill} through relevant projects"
+        # HARD FILTER (prevents bad outputs like summary/email)
+        if (
+            not result
+            or "summary" in result.lower()
+            or "email" in result.lower()
+            or "phone" in result.lower()
+            or len(result.split()) > 30
+        ):
+            return f"• Improve {skill} by applying it in real-world projects aligned with job requirements"
 
-        return "• " + result
+        if not result.startswith("•"):
+            result = "• " + result
+
+        return result
 
     except Exception:
-        return f"• Experience working with {skill} in real-world scenarios"
+        return f"• Strengthen {skill} through hands-on project implementation"
 
 
 # -----------------------------
@@ -116,21 +174,29 @@ Make it concise, impactful, and ATS-friendly.
 # -----------------------------
 def generate_resume_improvements(job_text, resume_text):
 
-    # 1. Extract job skills
+    # limit context (IMPORTANT for stability)
+    job_text = job_text[:1500]
+    resume_text = resume_text[:1500]
+
+    # 1. Extract skills
     job_skills = extract_skills(job_text)
 
-    # 2. Find missing skills (semantic)
+    # 2. Missing skills
     missing_skills = find_missing_skills(job_skills, resume_text)
 
     # 3. Match score
     match_score = calculate_match_score(job_skills, resume_text)
 
-    # 4. Generate suggestions (limit for performance)
+    # 4. Generate suggestions (no duplicates)
     suggestions = []
+    seen = set()
 
     for skill in missing_skills[:5]:
         bullet = generate_bullet(skill, job_text, resume_text)
-        suggestions.append(bullet)
+
+        if bullet not in seen:
+            suggestions.append(bullet)
+            seen.add(bullet)
 
     return {
         "match_score": match_score,
