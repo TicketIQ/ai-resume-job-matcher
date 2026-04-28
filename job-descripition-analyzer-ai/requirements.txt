@@ -1,4 +1,6 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
 streamlit
-scikit-learn
-numpy
+sentence-transformers
 pdfminer.six
+anthropic
